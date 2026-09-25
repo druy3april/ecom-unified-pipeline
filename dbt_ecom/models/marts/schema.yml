@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: dim_channels
+    description: "Bảng chiều danh mục kênh bán hàng và tiếp thị"
+    columns:
+      - name: channel_key
+        tests:
+          - unique
+          - not_null
+      - name: channel_name
+        tests:
+          - unique
+          - not_null
+
+  - name: fact_orders_daily
+    description: "Bảng Fact tổng hợp hiệu suất đơn hàng theo ngày"
+    columns:
+      - name: fact_order_key
+        tests:
+          - unique
+          - not_null
+      - name: order_date
+        tests:
+          - not_null
+      - name: net_revenue
+        tests:
+          - not_null
+
+  - name: fact_marketing_daily
+    description: "Bảng Fact tổng hợp chi phí quảng cáo theo ngày"
+    columns:
+      - name: fact_marketing_key
+        tests:
+          - unique
+          - not_null
+      - name: total_ad_spend
+        tests:
+          - not_null

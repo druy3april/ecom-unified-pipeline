@@ -1,0 +1,13 @@
+ecom_dbt_profile:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: postgres
+      password: REDACTED_POSTGRES_PASSWORD
+      dbname: ecom_dw
+      schema: public
+      threads: 4
+      keepalives_idle: 0

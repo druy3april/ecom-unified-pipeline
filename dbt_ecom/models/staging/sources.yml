@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: raw_shopee
+    database: ecom_dw
+    schema: raw_shopee
+    tables:
+      - name: orders
+        description: "Bảng đơn hàng thô nạp từ Shopee Open API qua MinIO"
+
+  - name: raw_lazada
+    database: ecom_dw
+    schema: raw_lazada
+    tables:
+      - name: orders
+        description: "Bảng đơn hàng thô nạp từ Lazada Open Platform qua MinIO"
+
+  - name: raw_tiktokshop
+    database: ecom_dw
+    schema: raw_tiktokshop
+    tables:
+      - name: orders
+        description: "Bảng đơn hàng thô nạp từ TikTok Shop Partner API qua MinIO"
+
+  - name: raw_marketing
+    database: ecom_dw
+    schema: raw_marketing
+    tables:
+      - name: ad_spend
+        description: "Nhật ký chi phí quảng cáo hàng ngày từ Meta, Google và TikTok Ads"
