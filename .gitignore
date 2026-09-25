@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# dbt artifacts & targets
+dbt_ecom/target/
+dbt_ecom/dbt_packages/
+dbt_ecom/logs/
+dbt_ecom/dbt_modules/
+
+# Local Environment Variables & Secrets
+.env
+*.env.local
+
+# Large Raw Data files (nếu có lưu file csv lớn ở local)
+seed_data/raw_data/*.csv
+seed_data/*.csv
+*.csv
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# IDE & Editor configs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Power BI temp files (nếu có sinh file backup/temp)
+*.tmp
