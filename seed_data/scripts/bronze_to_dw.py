@@ -18,17 +18,22 @@ from botocore.client import Config
 from sqlalchemy import create_engine, text
 
 # 1. Cấu hình kết nối MinIO
-MINIO_ENDPOINT = "http://localhost:9000"
-ACCESS_KEY = "minioadmin"
-SECRET_KEY = "REDACTED_MINIO_PASSWORD"
-BUCKET_NAME = "lakehouse"
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
+ACCESS_KEY = os.getenv("MINIO_ROOT_USER")
+SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD")
+BUCKET_NAME = os.getenv("MINIO_BUCKET", "lakehouse")
 
 # 2. Cấu hình kết nối PostgreSQL Data Warehouse
-DB_USER = "postgres"
-DB_PASS = "REDACTED_POSTGRES_PASSWORD"
-DB_HOST = "localhost"
-DB_PORT = "5432"
-DB_NAME = "ecom_dw"
+DB_USER = os.getenv("POSTGRES_USER", "postgres")
+DB_PASS = os.getenv("POSTGRES_PASSWORD")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("POSTGRES_PORT", "5432")
+DB_NAME = os.getenv("POSTGRES_DB", "ecom_dw")
+
+if not ACCESS_KEY or not SECRET_KEY or not DB_PASS:
+    raise RuntimeError(
+        "Set MINIO_ROOT_USER, MINIO_ROOT_PASSWORD, and POSTGRES_PASSWORD before running this script"
+    )
 
 DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 

@@ -14,10 +14,13 @@ dbt_ecom/target/
 dbt_ecom/dbt_packages/
 dbt_ecom/logs/
 dbt_ecom/dbt_modules/
+dbt_ecom/.user.yml
 
 # Local Environment Variables & Secrets
 .env
 *.env.local
+.env.*
+!.env.example
 
 # Large Raw Data files (nếu có lưu file csv lớn ở local)
 seed_data/raw_data/*.csv
@@ -38,3 +41,5 @@ desktop.ini
 
 # Power BI temp files (nếu có sinh file backup/temp)
 *.tmp
+~$*.pbix
+*.pbit

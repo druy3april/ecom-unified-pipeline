@@ -3,11 +3,11 @@ ecom_dbt_profile:
   outputs:
     dev:
       type: postgres
-      host: localhost
-      port: 5432
-      user: postgres
-      password: REDACTED_POSTGRES_PASSWORD
-      dbname: ecom_dw
+      host: "{{ env_var('DB_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'postgres') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'ecom_dw') }}"
       schema: public
       threads: 4
       keepalives_idle: 0

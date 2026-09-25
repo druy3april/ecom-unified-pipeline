@@ -1,105 +1,81 @@
-# 🛒 End-to-End E-Commerce Multi-Channel Analytics Pipeline
+# E-Commerce Unified Analytics Pipeline
 
-Một kiến trúc Data Pipeline hoàn chỉnh thu thập, chuẩn hóa dữ liệu giao dịch đa sàn TMĐT (Shopee, Lazada, TikTok Shop) và dữ liệu chi phí quảng cáo (Meta, Google, TikTok Ads), biến đổi theo mô hình Star Schema bằng **dbt Core** và trực quan hóa hiệu quả kinh doanh, chỉ số hoàn vốn quảng cáo (**Blended ROAS**) trên **Power BI**.
+Pipeline local end-to-end hợp nhất dữ liệu đơn hàng đa kênh (Shopee, Lazada, TikTok Shop) và chi phí quảng cáo vào PostgreSQL. MinIO đóng vai trò Bronze data lake, dbt tạo các lớp staging/intermediate/marts và file Power BI cung cấp lớp báo cáo.
 
----
-
-## 🏗️ Kiến trúc hệ thống (System Architecture)
-[CSV Sources: Shopee / Lazada / TikTok Shop / Ad Spend]
-│
-▼ (Python Ingestion)
-[MinIO Object Storage (Bronze Lakehouse)]
-│
-▼ (Streaming Batch Ingestion)
-[PostgreSQL DW (Raw Staging Schemas)]
-│
-▼ (dbt Core Transformation)
-├── Staging Layer (stg_*)
-├── Intermediate Layer (int_orders_unified)
-└── Marts Layer (dim_dates, dim_channels, fact_orders_daily, fact_marketing_daily)
-│
-▼ (Import Connection)
-[Power BI Desktop (Star Schema Serving)]
-├── Executive Sales Overview Dashboard
-└── Marketing & ROAS Performance Dashboard
-
----
-
-## 🛠️ Công nghệ sử dụng (Tech Stack)
-
-* **Infrastructure & Containerization:** Docker, Docker Compose
-* **Data Lakehouse (Storage):** MinIO (S3-compatible Object Storage)
-* **Data Warehouse:** PostgreSQL
-* **Data Transformation & Modeling:** dbt Core (Postgres Adapter), SQL
-* **Data Ingestion:** Python (`boto3`, `pandas`, `psycopg2`, `sqlalchemy`)
-* **Serving Layer & Business Intelligence:** Power BI Desktop, DAX
-
----
-
-## 📂 Cấu trúc thư mục (Repository Structure)
+## Kiến trúc
 
 ```text
-ecom-unified-pipeline/
-├── dbt_ecom/                      # Dự án dbt Core
-│   ├── dbt_project.yml
-│   ├── profiles.yml
-│   └── models/
-│       ├── staging/               # Làm sạch, ép kiểu schema từng sàn
-│       ├── intermediate/          # Hợp nhất đa sàn TMĐT (int_orders_unified)
-│       └── marts/                 # Bảng Fact & Dimension phục vụ BI
-├── docker-compose.yml             # Khởi tạo MinIO & PostgreSQL container
-├── powerbi/
-│   └── Ecom_Unified_Analytics.pbix # Dashboard hoàn thiện
-├── seed_data/                     # Scripts tạo mock data và nạp dữ liệu
-│   └── scripts/
-│       ├── generate_mock_data.py  # Tạo dữ liệu giả lập 100k+ đơn hàng
-│       ├── local_to_bronze.py     # Nạp file local lên MinIO Bronze
-│       └── bronze_to_dw.py        # Đổ dữ liệu từ MinIO vào PostgreSQL Raw
-└── README.md
+CSV input -> Python -> MinIO Bronze -> PostgreSQL raw_* -> dbt -> marts -> Power BI
+```
 
-🚀 Hướng dẫn triển khai dự án (Getting Started)
-1. Khởi động hạ tầng Docker
-Bash
-docker compose up -d
-MinIO Console: http://localhost:9001 (User: minioadmin / Pass: minioadmin123)
+Các model dbt hiện có gồm 4 staging models, 1 intermediate model và 3 mart models: `dim_channels`, `fact_orders_daily` và `fact_marketing_daily`.
 
-PostgreSQL DW: localhost:5432 (User: postgres / Database: ecom_dw)
+## Yêu cầu
 
-2. Thiết lập môi trường và nạp dữ liệu
-Bash
-# Tạo môi trường ảo và cài đặt thư viện
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install dbt-postgres
+- Docker và Docker Compose
+- Python 3.10+
+- Power BI Desktop (chỉ cần nếu mở báo cáo)
 
-# Sinh dữ liệu và nạp qua Bronze Lakehouse vào Data Warehouse
-python seed_data/scripts/generate_mock_data.py
-python seed_data/scripts/local_to_bronze.py
-python seed_data/scripts/bronze_to_dw.py
+## Chạy local
 
-3. Thực thi biến đổi và kiểm định chất lượng với dbt
-Bash
-cd dbt_ecom
-dbt build --profiles-dir .
+1. Tạo cấu hình local và khởi động dịch vụ:
 
-(Toàn bộ 8 models và 11 tests kiểm tra tính duy nhất, khóa ngoại và ràng buộc not-null đều đạt 100%).
+   ```bash
+   cp .env.example .env
+   # Đổi các password trong .env trước khi dùng ở môi trường chia sẻ.
+   docker compose up -d
+   ```
 
-📊 Mô hình dữ liệu & Báo cáo Power BI (Data Marts & BI)
-Mô hình Star Schema:
-dim_channels: Kênh phân phối và loại hình tiếp thị.
+   MinIO Console: <http://localhost:9001>
+   PostgreSQL: `localhost:5432`, database `ecom_dw`
 
-Dim_Date: Bảng chiều lịch tự động phục vụ Time-Intelligence.
+2. Cài dependencies:
 
-fact_orders_daily: Tổng hợp doanh thu gộp (GMV), doanh thu thuần (Net Revenue), tỷ lệ hủy đơn theo ngày.
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   set -a; source .env; set +a
+   ```
 
-fact_marketing_daily: Chi phí quảng cáo, lượt hiển thị, click, CPC và CTR theo chiến dịch.
+3. Chuẩn bị dữ liệu Olist trong `seed_data/raw/`. Các file đầu vào cần có:
+   `olist_orders_dataset.csv`, `olist_order_payments_dataset.csv`, cùng các file Olist còn lại nếu cần phân tích mở rộng. Dataset và các file CSV sinh ra không được commit vào repository.
 
-Các chỉ số DAX cốt lõi:
-Total Net Revenue: Doanh thu thực tế sau khi loại bỏ các đơn hủy.
+4. Tạo dữ liệu theo kênh, sinh ad spend, upload Bronze và nạp PostgreSQL:
 
-Average Order Value (AOV): Doanh thu trung bình trên mỗi đơn hoàn tất.
+   ```bash
+   python seed_data/scripts/split_olist_channels.py
+   python seed_data/scripts/generate_marketing_data.py
+   python seed_data/scripts/upload_to_datalake.py
+   python seed_data/scripts/bronze_to_dw.py
+   ```
 
-Cancellation Rate: Tỷ lệ hủy đơn hàng đa sàn.
+5. Chạy dbt:
 
-Real Blended ROAS: Tỷ suất hoàn vốn quảng cáo thực tế tính trên doanh thu thuần đã đối soát.
+   ```bash
+   cd dbt_ecom
+   dbt build --profiles-dir .
+   ```
+
+## Cấu trúc chính
+
+```text
+dbt_ecom/                  # dbt project, models và tests
+seed_data/scripts/         # Tạo, upload và nạp dữ liệu
+seed_data/raw/             # Dataset local, không commit
+seed_data/processed/       # CSV trung gian, không commit
+powerbi/                   # Báo cáo Power BI
+docker-compose.yml         # PostgreSQL + MinIO
+```
+
+## Mô hình dữ liệu
+
+- `dim_channels`: danh mục kênh bán hàng và marketing.
+- `fact_orders_daily`: GMV, net revenue và trạng thái đơn theo ngày/kênh.
+- `fact_marketing_daily`: ad spend, impressions, clicks, CPC và CTR theo ngày/campaign.
+
+## Ghi chú bảo mật và GitHub
+
+- Không commit `.env`, credentials, `dbt_ecom/target/`, logs hoặc dữ liệu CSV.
+- `.env.example` chỉ chứa giá trị mẫu cho local development.
+- File PBIX là artifact tùy chọn; cần kiểm tra lại connection/data source trong Power BI Desktop trước khi chia sẻ công khai.

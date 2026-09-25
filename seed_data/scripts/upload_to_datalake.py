@@ -14,10 +14,13 @@ import boto3
 from botocore.client import Config
 
 # 1. Cấu hình thông số kết nối MinIO S3
-MINIO_ENDPOINT = "http://localhost:9000"
-ACCESS_KEY = "minioadmin"
-SECRET_KEY = "REDACTED_MINIO_PASSWORD"
-BUCKET_NAME = "lakehouse"
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
+ACCESS_KEY = os.getenv("MINIO_ROOT_USER")
+SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD")
+BUCKET_NAME = os.getenv("MINIO_BUCKET", "lakehouse")
+
+if not ACCESS_KEY or not SECRET_KEY:
+    raise RuntimeError("Set MINIO_ROOT_USER and MINIO_ROOT_PASSWORD before running this script")
 
 PROCESSED_DIR = "seed_data/processed"
 
