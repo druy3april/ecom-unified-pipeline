@@ -10,6 +10,12 @@ CSV input -> Python -> MinIO Bronze -> PostgreSQL raw_* -> dbt -> marts -> Power
 
 Các model dbt hiện có gồm 4 staging models, 1 intermediate model và 3 mart models: `dim_channels`, `fact_orders_daily` và `fact_marketing_daily`.
 
+### Trang 1: Tổng quan Doanh thu (Executive Sales)
+![Executive Sales](executive_sales.png)
+
+### Trang 2: Hiệu quả Tiếp thị & ROAS (Marketing & ROAS Performance)
+![Marketing & ROAS Performance](marketing_roas.png)
+
 ## Yêu cầu
 
 - Docker và Docker Compose
