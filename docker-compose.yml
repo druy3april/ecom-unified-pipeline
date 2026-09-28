@@ -22,20 +22,101 @@ services:
       - ecom_network
 
   # ==========================================
-  # 2. DATA LAKE: MinIO (quay.io mirror chính thức)
+  # 2. DATA LAKE: MinIO
   # ==========================================
   minio:
-    image: quay.io/minio/minio:RELEASE.2024-06-13T22-53-53Z
+    image: minio/minio:RELEASE.2023-05-18T00-05-36Z
     container_name: ecom_minio
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     ports:
-      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"   # API S3 Endpoint
-      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"   # Web Console UI
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+    networks:
+      - ecom_network
+
+  # ==========================================
+  # 3. AIRFLOW INIT (Khởi tạo DB & User)
+  # ==========================================
+  airflow-init:
+    image: apache/airflow:2.9.2-python3.10
+    container_name: ecom_airflow_init
+    depends_on:
+      postgres-dw:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-dw:5432/ecom_dw
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Set AIRFLOW_ADMIN_PASSWORD in .env}
+    command: >
+      bash -c "
+      airflow db migrate && (
+      airflow users create \
+        --username \"$$AIRFLOW_ADMIN_USERNAME\" \
+        --password \"$$AIRFLOW_ADMIN_PASSWORD\" \
+        --firstname Duy \
+        --lastname Nguyen \
+        --role Admin \
+        --email admin@ecom.local || airflow users list | grep -q \"$$AIRFLOW_ADMIN_USERNAME\"
+      )
+      "
+    networks:
+      - ecom_network
+
+  # ==========================================
+  # 4. AIRFLOW WEBSERVER & SCHEDULER
+  # ==========================================
+  airflow-webserver:
+    image: apache/airflow:2.9.2-python3.10
+    container_name: ecom_airflow_webserver
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-dw:5432/ecom_dw
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY:?Set AIRFLOW_SECRET_KEY in .env}
+      # Load biến môi trường cho dbt & minio
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: 5432
+      DB_HOST: postgres-dw
+      POSTGRES_DB: ecom_dw
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-lakehouse}
+      # Airflow SMTP Email Configuration
+      AIRFLOW__SMTP__SMTP_HOST: ${AIRFLOW_SMTP_HOST:-smtp.gmail.com}
+      AIRFLOW__SMTP__SMTP_STARTTLS: 'true'
+      AIRFLOW__SMTP__SMTP_SSL: 'false'
+      AIRFLOW__SMTP__SMTP_USER: ${AIRFLOW_SMTP_USER:-}
+      AIRFLOW__SMTP__SMTP_PASSWORD: ${AIRFLOW_SMTP_PASSWORD:-}
+      AIRFLOW__SMTP__SMTP_PORT: ${AIRFLOW_SMTP_PORT:-587}
+      AIRFLOW__SMTP__SMTP_MAIL_FROM: ${AIRFLOW_SMTP_MAIL_FROM:-}
+      AIRFLOW_ALERT_EMAIL_TO: ${AIRFLOW_ALERT_EMAIL_TO:-}
+    ports:
+      - "127.0.0.1:${AIRFLOW_PORT:-8080}:8080"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - ./dbt_ecom:/opt/airflow/dbt_ecom
+      - ./seed_data:/opt/airflow/seed_data
+    command: >
+      bash -c "
+      pip install --no-cache-dir 'dbt-postgres>=1.8.0,<1.9.0' 'dbt-core>=1.8.0,<1.9.0' boto3 &&
+      (airflow scheduler &) &&
+      exec airflow webserver
+      "
     networks:
       - ecom_network
 

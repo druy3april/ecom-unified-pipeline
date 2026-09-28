@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.log
 
 # Python Virtual Environments
 .venv/
@@ -15,6 +16,7 @@ dbt_ecom/dbt_packages/
 dbt_ecom/logs/
 dbt_ecom/dbt_modules/
 dbt_ecom/.user.yml
+logs/
 
 # Local Environment Variables & Secrets
 .env
@@ -26,6 +28,9 @@ dbt_ecom/.user.yml
 seed_data/raw_data/*.csv
 seed_data/*.csv
 *.csv
+*.tar
+*.tar.gz
+*.tgz
 
 # OS generated files
 .DS_Store

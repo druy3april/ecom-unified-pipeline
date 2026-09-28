@@ -15,7 +15,7 @@ import os
 import boto3
 import pandas as pd
 from botocore.client import Config
-from sqlalchemy import create_engine, text
+from sqlalchemy import URL, create_engine, text
 
 # 1. Cấu hình kết nối MinIO
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
@@ -35,7 +35,14 @@ if not ACCESS_KEY or not SECRET_KEY or not DB_PASS:
         "Set MINIO_ROOT_USER, MINIO_ROOT_PASSWORD, and POSTGRES_PASSWORD before running this script"
     )
 
-DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = URL.create(
+    "postgresql+psycopg2",
+    username=DB_USER,
+    password=DB_PASS,
+    host=DB_HOST,
+    port=int(DB_PORT),
+    database=DB_NAME,
+)
 
 print("--- BẮT ĐẦU CHUYỂN DỮ LIỆU TỪ BRONZE LAKEHOUSE SANG DATA WAREHOUSE ---")
 
