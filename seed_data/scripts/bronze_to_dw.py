@@ -15,7 +15,8 @@ import os
 import boto3
 import pandas as pd
 from botocore.client import Config
-from sqlalchemy import URL, create_engine, text
+from sqlalchemy.engine import URL
+from sqlalchemy import create_engine, text
 
 # 1. Cấu hình kết nối MinIO
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
@@ -99,7 +100,7 @@ with engine.connect() as conn:
 
         # Tạo Schema trong Postgres nếu chưa có
         conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema};"))
-        conn.commit()
+        #conn.commit()
 
         # Ghi đè (replace) hoặc thêm mới dữ liệu vào bảng
         df.to_sql(
